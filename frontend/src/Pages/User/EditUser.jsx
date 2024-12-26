@@ -1,49 +1,79 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getUserById, updateUser } from "../../services/authService";
+import { getUserById, updateUser, getAllDepartments } from "../../services/authService";
 
 function EditUser() {
-    const { id } = useParams(); // Get user ID from URL
+    const { id } = useParams();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: "",
         fullName: "",
         email: "",
         role: "",
-        departmentId: "",
+        department: { departmentId: null }, // Định dạng đúng cho backend
     });
+
+    const [departments, setDepartments] = useState([]); // Danh sách phòng ban
     const [error, setError] = useState("");
-    const [successMessage, setSuccessMessage] = useState(""); // State for success message
+    const [successMessage, setSuccessMessage] = useState("");
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const user = await getUserById(id); // Fetch user data by ID
-                setFormData(user);
+                const user = await getUserById(id); // Lấy thông tin người dùng
+                setFormData({
+                    ...user,
+                    department: { departmentId: user.department?.departmentId || null },
+                });
             } catch (err) {
                 console.error("Error fetching user:", err);
                 setError("Unable to fetch user details.");
             }
         };
 
+        const fetchDepartments = async () => {
+            try {
+                const response = await getAllDepartments(); // Lấy danh sách phòng ban
+                setDepartments(response);
+            } catch (err) {
+                console.error("Error fetching departments:", err);
+                setError("Unable to fetch departments.");
+            }
+        };
+
         fetchUserData();
+        fetchDepartments();
     }, [id]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+
+        if (name === "departmentId") {
+            // Cập nhật departmentId trong formData.department
+            setFormData({
+                ...formData,
+                department: { departmentId: parseInt(value) },
+            });
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await updateUser(id, formData); // Update user details
+            // Kiểm tra trường rỗng
+            if (!formData.username || !formData.fullName || !formData.email || !formData.role) {
+                setError("Please fill out all required fields.");
+                return;
+            }
+
+            console.log("FormData trước khi gửi:", formData); // Debug dữ liệu trước khi gửi
+
+            await updateUser(id, formData); // Gửi formData
             setSuccessMessage("User updated successfully!");
             setError("");
-
-            // Clear the success message after 3 seconds
             setTimeout(() => {
-                setSuccessMessage("");
                 navigate("/user");
             }, 2000);
         } catch (err) {
@@ -56,10 +86,7 @@ function EditUser() {
         <div className="container mt-4">
             <h1>Edit User</h1>
 
-            {/* Display success message */}
             {successMessage && <div className="alert alert-success">{successMessage}</div>}
-
-            {/* Display error message */}
             {error && <div className="alert alert-danger">{error}</div>}
 
             <form onSubmit={handleSubmit}>
@@ -105,12 +132,29 @@ function EditUser() {
                         onChange={handleInputChange}
                         required
                     >
+                        <option value="">Select Role</option>
                         <option value="Admin">Admin</option>
                         <option value="Manager">Manager</option>
                         <option value="Staff">Staff</option>
                     </select>
                 </div>
-
+                <div className="mb-3">
+                    <label className="form-label">Department</label>
+                    <select
+                        className="form-select"
+                        name="departmentId"
+                        value={formData.department.departmentId || ""}
+                        onChange={handleInputChange}
+                        required
+                    >
+                        <option value="">Select Department</option>
+                        {departments.map((department) => (
+                            <option key={department.departmentId} value={department.departmentId}>
+                                {department.departmentName}
+                            </option>
+                        ))}
+                    </select>
+                </div>
                 <button type="submit" className="btn btn-success">Update User</button>
             </form>
         </div>

@@ -1,57 +1,86 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createUser } from "../../services/authService"; // Bỏ gán quyền từ import
-import { PATHS } from "../../constant/pathnames";
+import { createUser, getAllDepartments } from "../../services/authService";
 
 function AddUser() {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: "",
         fullName: "",
         email: "",
         role: "",
         password: "",
+        department: { departmentId: null }, // Định dạng đúng cho backend
     });
-    const [message, setMessage] = useState("");
-    const [error, setError] = useState("");
-    const navigate = useNavigate();
 
-    // Handle input changes for user fields
+    const [departments, setDepartments] = useState([]);
+    const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
+
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            try {
+                const response = await getAllDepartments(); // Lấy danh sách phòng ban
+                setDepartments(response);
+            } catch (err) {
+                console.error("Error fetching departments:", err);
+                setError("Unable to fetch departments.");
+            }
+        };
+
+        fetchDepartments();
+    }, []);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+
+        if (name === "departmentId") {
+            // Cập nhật departmentId trong formData.department
+            setFormData({
+                ...formData,
+                department: { departmentId: parseInt(value) },
+            });
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
     };
 
-    // Submit form to create a new user
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // Create user
-            const newUser = await createUser(formData);
+            // Kiểm tra trường rỗng
+            if (!formData.username || !formData.fullName || !formData.email || !formData.role || !formData.password) {
+                setError("Please fill out all required fields.");
+                return;
+            }
 
-            setMessage("User added successfully!");
+            console.log("FormData trước khi gửi:", formData); // Debug dữ liệu trước khi gửi
+
+            await createUser(formData); // Gửi formData
+            setSuccessMessage("User added successfully!");
             setError("");
             setTimeout(() => {
-                navigate(PATHS.USER);
-            }, 1000);
+                navigate("/user"); // Điều hướng về danh sách user
+            }, 2000);
         } catch (err) {
             console.error("Error adding user:", err);
-            setError("Failed to add user. Please try again.");
-            setMessage("");
+            setError("Unable to add user.");
         }
     };
 
     return (
         <div className="container mt-4">
-            <h1 className="mb-4">Add User</h1>
-            {message && <div className="alert alert-success">{message}</div>}
+            <h1>Add User</h1>
+
+            {successMessage && <div className="alert alert-success">{successMessage}</div>}
             {error && <div className="alert alert-danger">{error}</div>}
+
             <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                    <label htmlFor="username" className="form-label">Username</label>
+                    <label className="form-label">Username</label>
                     <input
                         type="text"
                         className="form-control"
-                        id="username"
                         name="username"
                         value={formData.username}
                         onChange={handleInputChange}
@@ -59,11 +88,10 @@ function AddUser() {
                     />
                 </div>
                 <div className="mb-3">
-                    <label htmlFor="fullName" className="form-label">Full Name</label>
+                    <label className="form-label">Full Name</label>
                     <input
                         type="text"
                         className="form-control"
-                        id="fullName"
                         name="fullName"
                         value={formData.fullName}
                         onChange={handleInputChange}
@@ -71,11 +99,10 @@ function AddUser() {
                     />
                 </div>
                 <div className="mb-3">
-                    <label htmlFor="email" className="form-label">Email</label>
+                    <label className="form-label">Email</label>
                     <input
                         type="email"
                         className="form-control"
-                        id="email"
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
@@ -83,10 +110,9 @@ function AddUser() {
                     />
                 </div>
                 <div className="mb-3">
-                    <label htmlFor="role" className="form-label">Role</label>
+                    <label className="form-label">Role</label>
                     <select
                         className="form-select"
-                        id="role"
                         name="role"
                         value={formData.role}
                         onChange={handleInputChange}
@@ -98,13 +124,28 @@ function AddUser() {
                         <option value="Staff">Staff</option>
                     </select>
                 </div>
-
                 <div className="mb-3">
-                    <label htmlFor="password" className="form-label">Password</label>
+                    <label className="form-label">Department</label>
+                    <select
+                        className="form-select"
+                        name="departmentId"
+                        value={formData.department.departmentId || ""}
+                        onChange={handleInputChange}
+                        required
+                    >
+                        <option value="">Select Department</option>
+                        {departments.map((department) => (
+                            <option key={department.departmentId} value={department.departmentId}>
+                                {department.departmentName}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className="mb-3">
+                    <label className="form-label">Password</label>
                     <input
                         type="password"
                         className="form-control"
-                        id="password"
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}

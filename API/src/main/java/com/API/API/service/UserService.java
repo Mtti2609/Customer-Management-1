@@ -65,6 +65,7 @@ public class UserService {
             user.setDepartment(null);
         }
 
+
         // Mã hóa mật khẩu trước khi lưu vào database
         user.setPassword(hashPassword(user.getPassword()));
 
@@ -72,36 +73,22 @@ public class UserService {
     }
 
     // Cập nhật User
-    public User updateUser(Integer id, User updatedUser, MultipartFile file) throws IOException {
+    public User updateUser(Integer id, User updatedUser) {
         Optional<User> existingUser = userRepository.findById(id);
         if (existingUser.isPresent()) {
             User user = existingUser.get();
+            user.setUsername(updatedUser.getUsername());
             user.setFullName(updatedUser.getFullName());
             user.setEmail(updatedUser.getEmail());
-            user.setPassword(hashPassword(updatedUser.getPassword()));  // Mã hóa lại mật khẩu khi cập nhật
             user.setRole(updatedUser.getRole());
-
-            // Cập nhật department nếu có
-            if (updatedUser.getDepartment() != null) {
-                Optional<Department> department = departmentRepository.findById(updatedUser.getDepartment().getDepartmentId());
-                department.ifPresent(user::setDepartment);
-            }
-
-            // Nếu có file avatar thì cập nhật
-            if (file != null && !file.isEmpty()) {
-                try {
-                    String avatarUrl = FileUtils.saveAvatar(file);
-                    user.setAvatar(avatarUrl);
-                } catch (IOException e) {
-                    throw new RuntimeException("Error saving avatar", e);
-                }
-            }
-
+            user.setDepartment(updatedUser.getDepartment()); // Cập nhật phòng ban nếu có
             return userRepository.save(user);
         } else {
-            throw new RuntimeException("User not found");
+            throw new IllegalArgumentException("User not found with ID: " + id);
         }
     }
+
+
 
     // Xóa User
     public void deleteUser(Integer id) {

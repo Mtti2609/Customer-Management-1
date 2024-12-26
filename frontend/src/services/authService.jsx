@@ -19,18 +19,23 @@ export const getUserById = async (id) => {
 };
 
 export const createUser = async (user) => {
-    const response = await axios.post(`${API_BASE_URL}/users`, user);
+    const response = await axios.post(`${API_BASE_URL}/users`, {
+        ...user,
+        department: { departmentId: user.departmentId }, // Định dạng đúng cho backend
+    });
     return response.data;
 };
 
-export const updateUser = async (id, formData) => {
-    const response = await axios.put(`${API_BASE_URL}/users/${id}`, formData, {
+
+export const updateUser = async (id, userData) => {
+    const response = await axios.put(`${API_BASE_URL}/users/${id}`, userData, {
         headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type": "application/json",
         },
     });
     return response.data;
 };
+
 
 export const deleteUser = async (id) => {
     await axios.delete(`${API_BASE_URL}/users/${id}`);

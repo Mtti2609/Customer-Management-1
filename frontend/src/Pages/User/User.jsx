@@ -167,7 +167,8 @@ function User() {
                                 <td>{user.fullName}</td>
                                 <td>{user.email}</td>
                                 <td>{user.role}</td>
-                                <td>{user.department?.departmentName || "Chưa phân bổ"}</td> {/* Hiển thị tên phòng ban */}
+                                <td>{user.department?.departmentName || "Chưa phân bổ"}</td>
+
                                 <td>
                                     <NavLink
                                         to={`${PATHS.EDIT_USER}/${user.userId}`}
