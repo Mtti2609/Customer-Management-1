@@ -11,6 +11,7 @@ import java.util.List;
 @Repository
 public interface PermissionRepository extends JpaRepository<Permission, Integer> {
 
-    @Query("SELECT p FROM Permission p JOIN UserPermission up ON p.permissionID = up.permission.permissionID WHERE up.user.userId = :userId")
-    List<Permission> findPermissionsByUserId(@Param("userId") Integer userId);
+    // Sửa lại tên phương thức và truy vấn cho đúng với phòng ban (Department)
+    @Query("SELECT p FROM Permission p JOIN DepartmentPermission dp ON p.permissionID = dp.permission.permissionID WHERE dp.department.departmentId = :departmentId")
+    List<Permission> findPermissionsByDepartmentId(@Param("departmentId") Integer departmentId);
 }

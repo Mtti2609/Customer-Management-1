@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { PATHS } from "../../constant/pathnames";
-import { getPermissionsByUserId, getAllPermissions } from "../../services/authService";
+import { getPermissionsByDepartmentId, getAllPermissions } from "../../services/authService"; // Đổi tên hàm cho đúng
 
 function Slidebar({ isCollapsed }) {
     const [dynamicMenuItems, setDynamicMenuItems] = useState([]);
@@ -15,9 +15,9 @@ function Slidebar({ isCollapsed }) {
                 if (user && user.role === "Admin") {
                     // Admins get all permissions
                     permissions = await getAllPermissions();
-                } else if (user && user.userId) {
-                    // Other users fetch permissions by userId
-                    permissions = await getPermissionsByUserId(user.userId);
+                } else if (user && user.departmentId) {
+                    // Fetch permissions by departmentId
+                    permissions = await getPermissionsByDepartmentId(user.departmentId);
                 }
 
                 const mappedMenuItems = mapPermissionsToMenuItems(permissions);

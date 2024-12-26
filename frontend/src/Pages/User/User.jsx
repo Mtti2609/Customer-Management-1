@@ -118,6 +118,9 @@ function User() {
                 <NavLink to={PATHS.ADD_USER} className="btn btn-primary">
                     Thêm User
                 </NavLink>
+                <NavLink to={PATHS.ADD_DEPARTMENT} className="btn btn-success">
+                        Tạo phòng ban
+                </NavLink>
             </div>
 
             {/* Search and Filter */}
@@ -152,6 +155,7 @@ function User() {
                             <th>Full Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Phòng Ban</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -163,6 +167,7 @@ function User() {
                                 <td>{user.fullName}</td>
                                 <td>{user.email}</td>
                                 <td>{user.role}</td>
+                                <td>{user.department?.departmentName || "Chưa phân bổ"}</td> {/* Hiển thị tên phòng ban */}
                                 <td>
                                     <NavLink
                                         to={`${PATHS.EDIT_USER}/${user.userId}`}

@@ -29,6 +29,10 @@ public class User {
 
     private String avatar;
 
+    @ManyToOne
+    @JoinColumn(name = "departmentId", nullable = true) // Liên kết với bảng Department
+    private Department department;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
@@ -116,6 +120,14 @@ public class User {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
     }
 
     public enum Role {

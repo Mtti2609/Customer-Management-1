@@ -41,25 +41,54 @@ export const getAllPermissions = async () => {
     const response = await axios.get(`${API_BASE_URL}/permissions/all`);
     return response.data; // Returning all permissions
 };
-// 2. Get Permissions by User ID
-export const getPermissionsByUserId = async (userId) => {
-    const response = await axios.get(`${API_BASE_URL}/permissions/${userId}`);
-    return response.data; // Returning permissions for a specific user
+
+export const getPermissionsByDepartmentId = async (departmentId) => {
+    const response = await axios.get(`${API_BASE_URL}/permissions/${departmentId}`);
+    return response.data; // Trả về danh sách quyền
 };
 
-// 3. Assign Permission to User
-export const assignPermissionToUser = async (userId, permissionIds) => {
-    const response = await axios.post(`${API_BASE_URL}/user-permissions/assign`, {
-        userId,
-        permissionIds
+
+
+export const assignPermissionsToDepartment = async (departmentId, permissionIds) => {
+    const response = await axios.post(`${API_BASE_URL}/department-permissions/assign`, {
+        departmentId,
+        permissionIds,
     });
-    return response.data; // Returning the data after assigning the permission
+    return response.data;
 };
 
-// 4. Remove Permission from User
-export const removePermissionFromUser = async (userId, permissionId) => {
-    const response = await axios.delete(`${API_BASE_URL}/user-permissions/remove`, {
-        data: { userId, permissionId }
+
+
+
+// 4. Remove Permission from Department
+export const removePermissionFromDepartment = async (departmentId, permissionId) => {
+    const response = await axios.delete(`${API_BASE_URL}/department-permissions/remove`, {
+        data: { departmentId, permissionId },
     });
-    return response.data; // Returning response after removing permission
+    return response.data;
+};
+
+
+export const getAllDepartments = async () => {
+    const response = await axios.get(`${API_BASE_URL}/departments`);
+    return response.data;
+};
+
+export const getDepartmentById = async (id) => {
+    const response = await axios.get(`${API_BASE_URL}/departments/${id}`);
+    return response.data;
+};
+
+export const createDepartment = async (department) => {
+    const response = await axios.post(`${API_BASE_URL}/departments`, department);
+    return response.data;
+};
+
+export const updateDepartment = async (id, department) => {
+    const response = await axios.put(`${API_BASE_URL}/departments/${id}`, department);
+    return response.data;
+};
+
+export const deleteDepartment = async (id) => {
+    await axios.delete(`${API_BASE_URL}/departments/${id}`);
 };

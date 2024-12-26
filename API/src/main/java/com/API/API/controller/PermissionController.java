@@ -22,13 +22,15 @@ public class PermissionController {
         return ResponseEntity.ok(permissions);
     }
 
-    // Get permissions by userId
-    @GetMapping("/{userId}")
-    public ResponseEntity<List<Permission>> getPermissionsByUserId(@PathVariable Integer userId) {
-        List<Permission> permissions = permissionService.getPermissionsByUserId(userId);
+    // Get permissions by departmentId
+    @GetMapping("/{departmentId}")
+    public ResponseEntity<List<Permission>> getPermissionsByDepartmentId(@PathVariable Integer departmentId) {
+        List<Permission> permissions = permissionService.getPermissionsByDepartmentId(departmentId);
         if (permissions.isEmpty()) {
-            return ResponseEntity.notFound().build(); // No permissions found
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(permissions);
     }
+
+
 }

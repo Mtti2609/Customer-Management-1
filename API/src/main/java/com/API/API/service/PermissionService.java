@@ -13,11 +13,13 @@ public class PermissionService {
     @Autowired
     private PermissionRepository permissionRepository;
 
+    // Lấy tất cả quyền
     public List<Permission> getAllPermissions() {
         return permissionRepository.findAll();
     }
 
-    public List<Permission> getPermissionsByUserId(Integer userId) {
-        return permissionRepository.findPermissionsByUserId(userId);
+    // Lấy quyền của phòng ban theo departmentId
+    public List<Permission> getPermissionsByDepartmentId(Integer departmentId) {
+        return permissionRepository.findPermissionsByDepartmentId(departmentId);
     }
 }

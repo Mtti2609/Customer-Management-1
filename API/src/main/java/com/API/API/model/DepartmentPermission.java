@@ -1,44 +1,42 @@
 package com.API.API.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_permissions")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class UserPermission {
+@Table(name = "department_permissions")
+public class DepartmentPermission {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer userPermissionID;
+    private Integer departmentPermissionID;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userID", nullable = false)
-    private User user;
+    @JoinColumn(name = "departmentID", nullable = false)
+    private Department department;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "permissionID", nullable = false)
     private Permission permission;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime assignedAt = LocalDateTime.now(); // Default to the current timestamp
+    private LocalDateTime assignedAt = LocalDateTime.now();
 
     // Getters and Setters
-    public Integer getUserPermissionID() {
-        return userPermissionID;
+    public Integer getDepartmentPermissionID() {
+        return departmentPermissionID;
     }
 
-    public void setUserPermissionID(Integer userPermissionID) {
-        this.userPermissionID = userPermissionID;
+    public void setDepartmentPermissionID(Integer departmentPermissionID) {
+        this.departmentPermissionID = departmentPermissionID;
     }
 
-    public User getUser() {
-        return user;
+    public Department getDepartment() {
+        return department;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setDepartment(Department department) {
+        this.department = department;
     }
 
     public Permission getPermission() {

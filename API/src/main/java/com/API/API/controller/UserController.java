@@ -2,6 +2,7 @@ package com.API.API.controller;
 
 import com.API.API.dto.LoginRequest;
 import com.API.API.dto.LoginResponse;
+import com.API.API.model.Department;
 import com.API.API.model.User;
 import com.API.API.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-
 
 @RestController
 @RequestMapping("/api/users")
@@ -33,7 +33,7 @@ public class UserController {
                     true,
                     loggedInUser.getUserId(),
                     loggedInUser.getUsername(),
-                    loggedInUser.getRole().toString() // Trả về vai trò của người dùng
+                    loggedInUser.getRole().toString()
             ));
         } else {
             return ResponseEntity.status(401).body(new LoginResponse(
@@ -46,36 +46,48 @@ public class UserController {
         }
     }
 
-
-
     // GET: /api/users
     @GetMapping
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 
     // GET: /api/users/{id}
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Integer id) {
-        return userService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Optional<User> user = userService.getUserById(id);
+        return user.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     // POST: /api/users
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
+    public ResponseEntity<?> createUser(@RequestBody User user) {
+        try {
+            // Kiểm tra nếu `departmentId` không null
+            if (user.getDepartment() != null && user.getDepartment().getDepartmentId() != null) {
+                Department department = new Department();
+                department.setDepartmentId(user.getDepartment().getDepartmentId());
+                user.setDepartment(department);
+            }
+
+            User createdUser = userService.createUser(user);
+            return ResponseEntity.ok(createdUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error creating user: " + e.getMessage());
+        }
     }
+
 
     // PUT: /api/users/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Integer id,
-                                           @RequestParam(value = "file", required = false) MultipartFile file,
-                                           @RequestParam("username") String username,
-                                            @RequestParam("fullName") String fullName,
-                                           @RequestParam("email") String email,
-                                           @RequestParam("role") String role) {
+    public ResponseEntity<?> updateUser(@PathVariable Integer id,
+                                        @RequestParam(value = "file", required = false) MultipartFile file,
+                                        @RequestParam("username") String username,
+                                        @RequestParam("fullName") String fullName,
+                                        @RequestParam("email") String email,
+                                        @RequestParam("role") String role,
+                                        @RequestParam(value = "departmentId", required = false) Integer departmentId) {
         try {
             User updatedUser = new User();
             updatedUser.setUsername(username);
@@ -83,10 +95,19 @@ public class UserController {
             updatedUser.setEmail(email);
             updatedUser.setRole(User.Role.valueOf(role));
 
+            // Cập nhật Department nếu có
+            if (departmentId != null) {
+                Department department = new Department();
+                department.setDepartmentId(departmentId);
+                updatedUser.setDepartment(department);
+            }
+
             User savedUser = userService.updateUser(id, updatedUser, file);
             return ResponseEntity.ok(savedUser);
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating user: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error updating user: " + e.getMessage());
         }
     }
 

@@ -28,6 +28,7 @@ import NotificationDashboard from "./Pages/Remaind/NotificationDashboard";
 import EventTypes from "./Pages/SuKien/EventTypes";
 import ThonngKe from "./Pages/ThongKe/ThongKe";
 import Profile from "./Pages/User/Profile";
+import AddDepartment from "./Pages/User/AddDepartment";
 // Helper function to check if the user has the required role
 function ProtectedRoute({ children, requiredRoles }) {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -116,6 +117,15 @@ function App() {
           {/* <Route path={PATHS.REMAIND} element={<Remaind />} /> */}
           <Route path={PATHS.THONGKE} element={<ThonngKe />} />
 
+          {/* ----------------DEPARTMENT------------------------- */}
+          <Route
+            path={PATHS.ADD_DEPARTMENT}
+            element={
+              <ProtectedRoute requiredRoles={["Admin"]}>
+                <AddDepartment />
+              </ProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
     </Router>
