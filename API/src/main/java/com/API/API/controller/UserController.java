@@ -3,6 +3,7 @@ package com.API.API.controller;
 import com.API.API.dto.LoginRequest;
 import com.API.API.dto.LoginResponse;
 import com.API.API.dto.UserWithDepartmentResponse;
+import com.API.API.model.Department;
 import com.API.API.model.User;
 import com.API.API.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import com.API.API.repository.DepartmentRepository;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -22,7 +23,8 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-
+    @Autowired
+    private DepartmentRepository departmentRepository;
     // POST: /api/users/login
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
@@ -94,18 +96,26 @@ public class UserController {
 
     // POST: /api/users
     @PostMapping
-    public User createUser(@RequestBody User user) {
+    public User createUser(@RequestBody User user, @RequestParam(required = false) Integer departmentId) {
+        if (departmentId != null) {
+            Department department = departmentRepository.findById(departmentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid Department ID"));
+            user.setDepartment(department);
+        }
         return userService.createUser(user);
     }
 
+
     // PUT: /api/users/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Integer id,
-                                           @RequestParam(value = "file", required = false) MultipartFile file,
-                                           @RequestParam("username") String username,
-                                            @RequestParam("fullName") String fullName,
-                                           @RequestParam("email") String email,
-                                           @RequestParam("role") String role) {
+    public ResponseEntity<User> updateUser(
+            @PathVariable Integer id,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam("username") String username,
+            @RequestParam("fullName") String fullName,
+            @RequestParam("email") String email,
+            @RequestParam("role") String role,
+            @RequestParam(value = "departmentId", required = false) Integer departmentId) { // Thêm departmentId
         try {
             User updatedUser = new User();
             updatedUser.setUsername(username);
@@ -113,12 +123,24 @@ public class UserController {
             updatedUser.setEmail(email);
             updatedUser.setRole(User.Role.valueOf(role));
 
+            // Gán phòng ban nếu departmentId không null
+            if (departmentId != null) {
+                Department department = departmentRepository.findById(departmentId)
+                        .orElseThrow(() -> new IllegalArgumentException("Invalid Department ID"));
+                updatedUser.setDepartment(department);
+            } else {
+                updatedUser.setDepartment(null); // Xóa phòng ban nếu departmentId không được truyền
+            }
+
             User savedUser = userService.updateUser(id, updatedUser, file);
             return ResponseEntity.ok(savedUser);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
         }
     }
+
     // Gán người dùng vào phòng ban và kế thừa quyền
     @PutMapping("/{userId}/department/{departmentId}")
     public ResponseEntity<String> addUserToDepartment(

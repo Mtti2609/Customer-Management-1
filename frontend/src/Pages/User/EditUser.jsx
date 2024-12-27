@@ -1,88 +1,70 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getUserById, getAllPermissions, getPermissionsByUserId, assignPermissionToUser, removePermissionFromUser, updateUser } from "../../services/authService";
+import { getUserById, updateUser } from "../../services/authService";
+import { getAllDepartments } from "../../services/authService";
 
 function EditUser() {
-    const { id } = useParams(); // Get user ID from URL
+    const { id } = useParams(); // Lấy ID user từ URL
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: "",
         fullName: "",
         email: "",
         role: "",
+        departmentId: null, // Thêm trường departmentId
     });
-    const [userPermissions, setUserPermissions] = useState([]); // Permissions user already has
-    const [allPermissions, setAllPermissions] = useState([]); // All available permissions
+    const [departments, setDepartments] = useState([]); // Danh sách các phòng ban
     const [error, setError] = useState("");
-    const [successMessage, setSuccessMessage] = useState(""); // State for success message
+    const [successMessage, setSuccessMessage] = useState("");
 
+    // Lấy thông tin user và phòng ban
     useEffect(() => {
-        const fetchUserData = async () => {
+        const fetchData = async () => {
             try {
-                const user = await getUserById(id); // Fetch user data by ID
-                setFormData(user);
-                const permissions = await getPermissionsByUserId(id); // Fetch user's current permissions
-                setUserPermissions(permissions.map((perm) => perm.permissionID)); // Store PermissionIDs
+                const user = await getUserById(id); // Fetch thông tin user
+                setFormData({
+                    username: user.username,
+                    fullName: user.fullName,
+                    email: user.email,
+                    role: user.role,
+                    departmentId: user.department?.departmentId || null, // Kiểm tra xem user có phòng ban không
+                });
+
+                const departmentsData = await getAllDepartments(); // Fetch danh sách phòng ban
+                setDepartments(departmentsData);
             } catch (err) {
-                console.error("Error fetching user or permissions:", err);
-                setError("Unable to fetch user details.");
+                console.error("Error fetching user or departments:", err);
+                setError("Unable to fetch user or department data.");
             }
         };
-
-        const fetchAllPermissions = async () => {
-            try {
-                const allPermissions = await getAllPermissions(); // Fetch all permissions
-                setAllPermissions(allPermissions);
-            } catch (err) {
-                console.error("Failed to fetch permissions:", err);
-            }
-        };
-
-        fetchUserData();
-        fetchAllPermissions();
+        fetchData();
     }, [id]);
 
-    const handleAddPermission = async (permissionId) => {
-        try {
-            await assignPermissionToUser(id, [permissionId]); // Assign permission to user
-            setUserPermissions([...userPermissions, permissionId]); // Update local state
-            setSuccessMessage("Permission added successfully.");
-        } catch (err) {
-            console.error("Error adding permission:", err);
-            setError("Unable to add permission.");
-        }
-    };
-
-    const handleRemovePermission = async (permissionId) => {
-        try {
-            await removePermissionFromUser(id, permissionId); // Remove permission from user
-            setUserPermissions(userPermissions.filter((permId) => permId !== permissionId)); // Update local state
-            setSuccessMessage("Permission removed successfully.");
-        } catch (err) {
-            console.error("Error removing permission:", err);
-            setError("Unable to remove permission.");
-        }
-    };
-
+    // Xử lý khi input thay đổi
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
 
+    // Xử lý khi chọn phòng ban
+    const handleDepartmentChange = (e) => {
+        setFormData({ ...formData, departmentId: parseInt(e.target.value) });
+    };
+
+    // Xử lý submit form
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await updateUser(id, formData); // Update user details
+            await updateUser(id, formData); // Gửi API cập nhật user
             setSuccessMessage("User updated successfully!");
             setError("");
 
-            // Clear the success message after 3 seconds
+            // Chuyển hướng về trang danh sách user sau 2 giây
             setTimeout(() => {
-                setSuccessMessage("");
                 navigate("/user");
             }, 2000);
         } catch (err) {
-            console.error("Error updating user details:", err);
+            console.error("Error updating user:", err);
             setError("Unable to update user details.");
         }
     };
@@ -91,10 +73,10 @@ function EditUser() {
         <div className="container mt-4">
             <h1>Edit User</h1>
 
-            {/* Display success message */}
+            {/* Hiển thị thông báo thành công */}
             {successMessage && <div className="alert alert-success">{successMessage}</div>}
 
-            {/* Display error message */}
+            {/* Hiển thị lỗi */}
             {error && <div className="alert alert-danger">{error}</div>}
 
             <form onSubmit={handleSubmit}>
@@ -146,31 +128,21 @@ function EditUser() {
                     </select>
                 </div>
 
-                {/* Permissions Section */}
+                {/* Dropdown chọn phòng ban */}
                 <div className="mb-3">
-                    <h4>Manage Permissions</h4>
-                    {allPermissions.map((permission) => (
-                        <div className="d-flex align-items-center mb-2" key={permission.permissionID}>
-                            <span className="me-2">{permission.name}</span>
-                            {userPermissions.includes(permission.permissionID) ? (
-                                <button
-                                    type="button"
-                                    className="btn btn-danger btn-sm"
-                                    onClick={() => handleRemovePermission(permission.permissionID)}
-                                >
-                                    Remove
-                                </button>
-                            ) : (
-                                <button
-                                    type="button"
-                                    className="btn btn-primary btn-sm"
-                                    onClick={() => handleAddPermission(permission.permissionID)}
-                                >
-                                    Add
-                                </button>
-                            )}
-                        </div>
-                    ))}
+                    <label className="form-label">Department</label>
+                    <select
+                        className="form-select"
+                        value={formData.departmentId || ""}
+                        onChange={handleDepartmentChange}
+                    >
+                        <option value="">No Department</option>
+                        {departments.map((dept) => (
+                            <option key={dept.departmentId} value={dept.departmentId}>
+                                {dept.departmentName}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <button type="submit" className="btn btn-success">Update User</button>

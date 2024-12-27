@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createUser, assignPermissionToUser, getAllPermissions } from "../../services/authService";
+import { createUser, getAllDepartments } from "../../services/authService";
 import { PATHS } from "../../constant/pathnames";
 
 function AddUser() {
@@ -10,25 +10,24 @@ function AddUser() {
         email: "",
         role: "",
         password: "",
+        departmentId: null, // Gắn phòng ban
     });
-    const [permissions, setPermissions] = useState([]);
-    const [availablePermissions, setAvailablePermissions] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
-    const [showPermissionsModal, setShowPermissionsModal] = useState(false); // Modal visibility
     const navigate = useNavigate();
 
-    // Fetch permissions on component mount
+    // Fetch departments on component mount
     useEffect(() => {
-        const fetchPermissions = async () => {
+        const fetchDepartments = async () => {
             try {
-                const data = await getAllPermissions();
-                setAvailablePermissions(data); // Set permissions from API
+                const data = await getAllDepartments();
+                setDepartments(data);
             } catch (err) {
-                console.error("Failed to fetch permissions:", err);
+                console.error("Failed to fetch departments:", err);
             }
         };
-        fetchPermissions();
+        fetchDepartments();
     }, []);
 
     // Handle input changes for user fields
@@ -37,35 +36,23 @@ function AddUser() {
         setFormData({ ...formData, [name]: value });
     };
 
-    // Handle permission selection
-    const handlePermissionChange = (e) => {
-        const { value, checked } = e.target;
-        const updatedPermissions = checked
-            ? [...permissions, parseInt(value)]
-            : permissions.filter((permissionId) => permissionId !== parseInt(value));
-        setPermissions(updatedPermissions);
-    };
-
-    // Submit form and assign permissions
+    // Submit form
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.departmentId) {
+            setError("Please select a department.");
+            return;
+        }
         try {
-            // Create user
-            const newUser = await createUser(formData);
-
-            // Assign permissions
-            if (permissions.length > 0) {
-                await assignPermissionToUser(newUser.userId, permissions);
-            }
-
-            setMessage("User added successfully with assigned permissions!");
+            await createUser(formData);
+            setMessage("User added successfully!");
             setError("");
             setTimeout(() => {
                 navigate(PATHS.USER);
             }, 1000);
         } catch (err) {
-            console.error("Error adding user or assigning permissions:", err);
-            setError("Failed to add user or assign permissions. Please try again.");
+            console.error("Error adding user:", err);
+            setError("Failed to add user. Please try again.");
             setMessage("");
         }
     };
@@ -129,31 +116,24 @@ function AddUser() {
                     </select>
                 </div>
 
-                {/* Button to open modal */}
                 <div className="mb-3">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setShowPermissionsModal(true)}
+                    <label htmlFor="departmentId" className="form-label">Department</label>
+                    <select
+                        className="form-select"
+                        id="departmentId"
+                        name="departmentId"
+                        value={formData.departmentId || ""}
+                        onChange={(e) => setFormData({ ...formData, departmentId: parseInt(e.target.value) })}
+                        required
                     >
-                        Assign Permissions
-                    </button>
+                        <option value="">Select Department</option>
+                        {departments.map((department) => (
+                            <option key={department.departmentId} value={department.departmentId}>
+                                {department.departmentName}
+                            </option>
+                        ))}
+                    </select>
                 </div>
-
-                {/* Display selected permissions below */}
-                {permissions.length > 0 && (
-                    <div className="mb-3">
-                        <h5>Selected Permissions:</h5>
-                        <ul>
-                            {permissions.map((permissionId) => {
-                                const permission = availablePermissions.find(p => p.permissionID === permissionId);
-                                return permission ? (
-                                    <li key={permission.permissionID}>{permission.name}</li>
-                                ) : null;
-                            })}
-                        </ul>
-                    </div>
-                )}
 
                 <div className="mb-3">
                     <label htmlFor="password" className="form-label">Password</label>
@@ -169,51 +149,6 @@ function AddUser() {
                 </div>
                 <button type="submit" className="btn btn-primary">Add User</button>
             </form>
-
-            {/* Permissions Modal */}
-            {showPermissionsModal && (
-                <div className="modal show" style={{ display: "block" }} tabIndex="-1">
-                    <div className="modal-dialog">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">Assign Permissions</h5>
-                                <button
-                                    type="button"
-                                    className="btn-close"
-                                    data-bs-dismiss="modal"
-                                    aria-label="Close"
-                                    onClick={() => setShowPermissionsModal(false)}
-                                ></button>
-                            </div>
-                            <div className="modal-body">
-                                {availablePermissions.map((permission) => (
-                                    <div className="form-check" key={permission.permissionID}>
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            id={`permission-${permission.permissionID}`}
-                                            value={permission.permissionID}
-                                            onChange={handlePermissionChange}
-                                        />
-                                        <label className="form-check-label" htmlFor={`permission-${permission.permissionID}`}>
-                                            {permission.name}
-                                        </label>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="modal-footer">
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={() => setShowPermissionsModal(false)}
-                                >
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

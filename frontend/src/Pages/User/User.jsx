@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom"; // Import useNavigate
 import { getAllUsers, deleteUser } from "../../services/authService";
 import { PATHS } from "../../constant/pathnames";
 
@@ -11,6 +11,8 @@ function User() {
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [userToDelete, setUserToDelete] = useState(null);
+
+    const navigate = useNavigate(); // Hook để điều hướng
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -90,6 +92,11 @@ function User() {
         if (currentPage > 1) setCurrentPage((prev) => prev - 1);
     };
 
+    // Chuyển sang trang danh sách phòng ban
+    const handleViewDepartments = () => {
+        navigate(PATHS.DEPARTMENTS); // Chuyển hướng tới route PATHS.DEPARTMENTS
+    };
+
     if (error) {
         return <div className="alert alert-danger">{error}</div>;
     }
@@ -115,9 +122,17 @@ function User() {
                 >
                     <i className="bi bi-people-fill me-2"></i>Danh sách User
                 </h1>
-                <NavLink to={PATHS.ADD_USER} className="btn btn-primary">
-                    Thêm User
-                </NavLink>
+                <div>
+                    <NavLink to={PATHS.ADD_USER} className="btn btn-primary me-2">
+                        Thêm User
+                    </NavLink>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={handleViewDepartments}
+                    >
+                        Xem danh sách phòng ban
+                    </button>
+                </div>
             </div>
 
             {/* Search and Filter */}
@@ -152,6 +167,7 @@ function User() {
                             <th>Full Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Department</th> {/* Thêm cột phòng ban */}
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -163,6 +179,7 @@ function User() {
                                 <td>{user.fullName}</td>
                                 <td>{user.email}</td>
                                 <td>{user.role}</td>
+                                <td>{user.department ? user.department.departmentName : "Chưa gán"}</td> {/* Hiển thị phòng ban */}
                                 <td>
                                     <NavLink
                                         to={`${PATHS.EDIT_USER}/${user.userId}`}

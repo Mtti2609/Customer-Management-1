@@ -59,6 +59,6 @@ export const PATHS = {
     EDIT_PAYMENT: `${PAYMENT_PATH}/editPayment`,
 
     // Thong Ke 
-    THONGKE: "/Thongke"
-
+    THONGKE: "/Thongke",
+    DEPARTMENTS: "/departments"
 };

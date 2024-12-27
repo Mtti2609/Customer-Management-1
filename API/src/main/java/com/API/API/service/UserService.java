@@ -108,35 +108,46 @@ public class UserService {
             }
         }
     }
+    public List<Permission> getUserPermissions(Integer userId) {
+        return userPermissionRepository.findPermissionsByUserId(userId);
+    }
+
 
     // Cập nhật thông tin user
 
     public User updateUser(Integer id, User updatedUser, MultipartFile file) throws IOException {
-        return userRepository.findById(id)
-                .map(user -> {
-                    // Cập nhật thông tin cơ bản
-                    user.setUsername(updatedUser.getUsername());
-                    user.setFullName(updatedUser.getFullName());
-                    user.setEmail(updatedUser.getEmail());
-                    user.setRole(updatedUser.getRole());
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-                    // Kiểm tra nếu có file tải lên
-                    if (file != null && !file.isEmpty()) {
-                        try {
-                            // Lưu avatar mới
-                            String avatarUrl = FileUtils.saveAvatar(file);
-                            user.setAvatar(avatarUrl); // Cập nhật avatar mới
-                        } catch (IOException e) {
-                            throw new RuntimeException("Error saving avatar", e);
-                        }
-                    } else {
-                        // Nếu không có file tải lên, giữ nguyên avatar hiện tại
-                        user.setAvatar(user.getAvatar());
-                    }
+        // Cập nhật thông tin cơ bản
+        existingUser.setUsername(updatedUser.getUsername());
+        existingUser.setFullName(updatedUser.getFullName());
+        existingUser.setEmail(updatedUser.getEmail());
+        existingUser.setRole(updatedUser.getRole());
 
-                    return userRepository.save(user); // Lưu thông tin người dùng
-                })
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // Kiểm tra nếu phòng ban thay đổi
+        if (updatedUser.getDepartment() != null &&
+                (existingUser.getDepartment() == null ||
+                        !existingUser.getDepartment().getDepartmentId().equals(updatedUser.getDepartment().getDepartmentId()))) {
+
+            // Xóa toàn bộ quyền cũ
+            userPermissionRepository.deleteByUserId(existingUser.getUserId());
+
+            // Cập nhật phòng ban
+            existingUser.setDepartment(updatedUser.getDepartment());
+
+            // Gán quyền mới từ phòng ban
+            assignPermissionsFromDepartment(existingUser, updatedUser.getDepartment().getDepartmentId());
+        }
+
+
+        return userRepository.save(existingUser);
+    }
+
+
+
+    public void clearUserPermissions(Integer userId) {
+        userPermissionRepository.deleteByUserId(userId);
     }
 
 
