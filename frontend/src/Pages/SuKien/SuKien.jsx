@@ -165,7 +165,9 @@ function Event() {
             {error && <div className="alert alert-danger">{error}</div>}
 
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h1>Danh sách Sự kiện</h1>
+                <h1 className="text-primary">
+                    <i class="bi bi-calendar-event-fill"></i>Danh sách dự án
+                </h1>
                 <div className="d-flex">
                     <NavLink
                         to={`${PATHS.EVENT_TYPES}`}

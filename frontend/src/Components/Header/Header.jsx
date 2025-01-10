@@ -44,7 +44,7 @@ function Header({ toggleSidebar }) {
     };
 
     return (
-        <header className="bg-white shadow-sm p-3 mb-4">
+        <header className="bg-white shadow-sm p-3 ">
             <div className="d-flex justify-content-between align-items-center">
                 <div className="d-flex align-items-center">
                     {/* Sidebar Toggle Button */}

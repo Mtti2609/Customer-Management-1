@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { getAllProjects, deleteProject, getAllProjectTypes } from "../../services/projectServices";
 import { PATHS } from "../../constant/pathnames";
+import 'bootstrap-icons/font/bootstrap-icons.css'; // Nếu bạn sử dụng npm để cài đặt Bootstrap Icons
 
 function Project() {
     const [projects, setProjects] = useState([]);
@@ -19,6 +20,10 @@ function Project() {
     const [statusFilter, setStatusFilter] = useState("");
     const [typeFilter, setTypeFilter] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
+
+    // Sorting states
+    const [sortColumn, setSortColumn] = useState("");
+    const [sortDirection, setSortDirection] = useState("asc"); // 'asc' or 'desc'
 
     // Fetch projects and project types when the component mounts
     useEffect(() => {
@@ -72,8 +77,28 @@ function Project() {
         return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     };
 
+    // Function to handle sorting
+    const handleSort = (column) => {
+        if (sortColumn === column) {
+            // Nếu cột đã được sắp xếp, thay đổi hướng sắp xếp
+            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+        } else {
+            // Sắp xếp cột mới với hướng tăng dần
+            setSortColumn(column);
+            setSortDirection("asc");
+        }
+    };
+
+    // Function to get the sort indicator
+    const getSortIndicator = (column) => {
+        if (sortColumn === column) {
+            return sortDirection === "asc" ? "▲" : "▼";
+        }
+        return "";
+    };
+
     // Filtered and searched projects
-    const filteredProjects = projects
+    let filteredProjects = projects
         .filter((project) => {
             if (statusFilter && project.status !== statusFilter) return false;
             if (typeFilter && project.projectType?.typeName !== typeFilter) return false;
@@ -82,13 +107,36 @@ function Project() {
             return true;
         });
 
+    // Apply sorting
+    if (sortColumn) {
+        filteredProjects.sort((a, b) => {
+            let aValue = a[sortColumn];
+            let bValue = b[sortColumn];
+
+            // Handle nested objects (e.g., projectType.typeName)
+            if (sortColumn.includes('.')) {
+                const keys = sortColumn.split('.');
+                aValue = a;
+                bValue = b;
+                keys.forEach(key => {
+                    aValue = aValue ? aValue[key] : '';
+                    bValue = bValue ? bValue[key] : '';
+                });
+            }
+
+            // Convert to lowercase if string for case-insensitive comparison
+            if (typeof aValue === "string") aValue = aValue.toLowerCase();
+            if (typeof bValue === "string") bValue = bValue.toLowerCase();
+
+            if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+            if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+            return 0;
+        });
+    }
 
     // Phân Quyền
     const user = JSON.parse(localStorage.getItem("user"));
     const isAuthorized = user?.role === "Admin" || user?.role === "Manager"; // Allow Admin and Manager
-
-
-
 
     // Pagination logic
     const indexOfLastProject = currentPage * projectsPerPage;
@@ -122,7 +170,9 @@ function Project() {
 
             {/* Add Project and View Project Types Buttons */}
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h1>Danh sách dự án</h1>
+                <h1 className="text-primary">
+                    <i class="bi bi-bar-chart"></i>Danh sách dự án
+                </h1>
                 <div className="d-flex gap-2">
                     <NavLink to={PATHS.ADD_PROJECT} className="btn btn-primary">
                         Thêm dự án
@@ -168,8 +218,14 @@ function Project() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
 
-                <button className="btn btn-outline-secondary" onClick={clearFilters}>
-                    Xóa bộ lọc
+                {/* Thay thế nút "Xóa bộ lọc" bằng biểu tượng */}
+                <button
+                    className="btn btn-outline-secondary"
+                    onClick={clearFilters}
+                    aria-label="Xóa bộ lọc"
+                    title="Xóa bộ lọc"
+                >
+                    <i className="bi bi-x-circle"></i>
                 </button>
             </div>
 
@@ -178,85 +234,107 @@ function Project() {
                 <table className="table table-striped table-bordered">
                     <thead className="table-dark">
                         <tr>
-                            <th>ID</th>
-                            <th>Tên dự án</th>
-                            <th>Khách hàng</th>
-                            <th>Người quản lý</th>
-                            <th>Loại dự án</th>
-                            <th>Trạng thái</th>
-                            <th>Ngày bắt đầu</th>
-                            <th>Ngày kết thúc</th>
+                            <th onClick={() => handleSort("projectId")} style={{ cursor: "pointer" }}>
+                                ID {getSortIndicator("projectId")}
+                            </th>
+                            <th onClick={() => handleSort("projectName")} style={{ cursor: "pointer" }}>
+                                Tên dự án {getSortIndicator("projectName")}
+                            </th>
+                            <th onClick={() => handleSort("customer.name")} style={{ cursor: "pointer" }}>
+                                Khách hàng {getSortIndicator("customer.name")}
+                            </th>
+                            <th onClick={() => handleSort("user.fullName")} style={{ cursor: "pointer" }}>
+                                Người quản lý {getSortIndicator("user.fullName")}
+                            </th>
+                            <th onClick={() => handleSort("projectType.typeName")} style={{ cursor: "pointer" }}>
+                                Loại dự án {getSortIndicator("projectType.typeName")}
+                            </th>
+                            <th onClick={() => handleSort("status")} style={{ cursor: "pointer" }}>
+                                Trạng thái {getSortIndicator("status")}
+                            </th>
+                            <th onClick={() => handleSort("startDate")} style={{ cursor: "pointer" }}>
+                                Ngày bắt đầu {getSortIndicator("startDate")}
+                            </th>
+                            <th onClick={() => handleSort("endDate")} style={{ cursor: "pointer" }}>
+                                Ngày kết thúc {getSortIndicator("endDate")}
+                            </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {currentProjects.map((project) => (
-                            <tr key={project.projectId}>
-                                <td>{project.projectId}</td>
-                                <td>{project.projectName}</td>
-                                <td>{project.customer?.name || "Không có khách hàng"}</td>
-                                <td>{project.user?.fullName || "Không có người quản lý"}</td>
-                                <td>{project.projectType?.typeName || "Không có loại dự án"}</td>
-                                <td>
-                                    <span
-                                        className={`badge ${project.status === "Ongoing"
-                                            ? "bg-primary"
-                                            : project.status === "Completed"
-                                                ? "bg-success"
-                                                : project.status === "Accepted_NotPaid"
-                                                    ? "bg-warning text-dark"
-                                                    : "bg-danger"
-                                            }`}
-                                    >
-                                        {project.status === "Ongoing"
-                                            ? "Đang thực hiện"
-                                            : project.status === "Completed"
-                                                ? "Hoàn thành"
-                                                : project.status === "Accepted_NotPaid"
-                                                    ? "Chấp nhận nhưng chưa thanh toán"
-                                                    : "Đã hủy"}
-                                    </span>
-                                </td>
-                                <td>{project.startDate}</td>
-                                <td>{project.endDate || "Chưa có ngày kết thúc"}</td>
-                                <td>
-                                    <button
-                                        className="btn btn-info btn-sm me-2"
-                                        onClick={() => viewProjectDetails(project)}
-                                    >
-                                        Xem
-                                    </button>
-                                    {isAuthorized && (
-                                        <>
-                                            {/* Render Edit button only if the project is not completed */}
-                                            {project.status !== "Completed" ? (
-                                                <NavLink
-                                                    to={`${PATHS.EDIT_PROJECT}/${project.projectId}`}
-                                                    className="btn btn-warning btn-sm me-2"
+                        {currentProjects.length > 0 ? (
+                            currentProjects.map((project) => (
+                                <tr key={project.projectId}>
+                                    <td>{project.projectId}</td>
+                                    <td>{project.projectName}</td>
+                                    <td>{project.customer?.name || "Không có khách hàng"}</td>
+                                    <td>{project.user?.fullName || "Không có người quản lý"}</td>
+                                    <td>{project.projectType?.typeName || "Không có loại dự án"}</td>
+                                    <td>
+                                        <span
+                                            className={`badge ${project.status === "Ongoing"
+                                                ? "bg-primary"
+                                                : project.status === "Completed"
+                                                    ? "bg-success"
+                                                    : project.status === "Accepted_NotPaid"
+                                                        ? "bg-warning text-dark"
+                                                        : "bg-danger"
+                                                }`}
+                                        >
+                                            {project.status === "Ongoing"
+                                                ? "Đang thực hiện"
+                                                : project.status === "Completed"
+                                                    ? "Hoàn thành"
+                                                    : project.status === "Accepted_NotPaid"
+                                                        ? "Chấp nhận nhưng chưa thanh toán"
+                                                        : "Đã hủy"}
+                                        </span>
+                                    </td>
+                                    <td>{project.startDate}</td>
+                                    <td>{project.endDate || "Chưa có ngày kết thúc"}</td>
+                                    <td>
+                                        <button
+                                            className="btn btn-info btn-sm me-2"
+                                            onClick={() => viewProjectDetails(project)}
+                                        >
+                                            Xem
+                                        </button>
+                                        {isAuthorized && (
+                                            <>
+                                                {/* Render Edit button only if the project is not completed */}
+                                                {project.status !== "Completed" ? (
+                                                    <NavLink
+                                                        to={`${PATHS.EDIT_PROJECT}/${project.projectId}`}
+                                                        className="btn btn-warning btn-sm me-2"
+                                                    >
+                                                        Sửa
+                                                    </NavLink>
+                                                ) : (
+                                                    <button className="btn btn-warning btn-sm me-2" disabled>
+                                                        Sửa
+                                                    </button>
+                                                )}
+
+                                                {/* Disable Delete button if the project is completed */}
+                                                <button
+                                                    className="btn btn-danger btn-sm"
+                                                    onClick={() => confirmDelete(project.projectId)}
+                                                    disabled={project.status === "Completed"} // Disable if the status is 'Completed'
                                                 >
-                                                    Sửa
-                                                </NavLink>
-                                            ) : (
-                                                <button className="btn btn-warning btn-sm me-2" disabled>
-                                                    Sửa
+                                                    Xóa
                                                 </button>
-                                            )}
-
-                                            {/* Disable Delete button if the project is completed */}
-                                            <button
-                                                className="btn btn-danger btn-sm"
-                                                onClick={() => confirmDelete(project.projectId)}
-                                                disabled={project.status === "Completed"} // Disable if the status is 'Completed'
-                                            >
-                                                Xóa
-                                            </button>
-                                        </>
-                                    )}
-
-
+                                            </>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="9" className="text-center">
+                                    Không tìm thấy dự án nào.
                                 </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>

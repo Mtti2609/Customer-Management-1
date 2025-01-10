@@ -12,33 +12,38 @@ const HomeLayout = () => {
     };
 
     return (
-        <div className="container-fluid h-100">
-            <div className="row h-100">
+        <div className="d-flex flex-column min-vh-100">
+            {/* Header */}
+            <Header toggleSidebar={toggleSidebar} />
+
+            <div className="d-flex flex-grow-1">
                 {/* Sidebar */}
                 <div
-                    className={`sidebar-wrapper ${isSidebarCollapsed ? "col-auto" : "col-md-3 col-lg-2"} bg-dark text-white p-0`}
-                    style={{ transition: "all 0.3s ease" }}
+                    className={`sidebar-wrapper bg-dark text-white p-0 ${
+                        isSidebarCollapsed ? "d-none d-md-block" : "d-block"
+                    }`}
+                    style={{
+                        width: isSidebarCollapsed ? "80px" : "250px",
+                        transition: "width 0.3s ease",
+                        overflow: "hidden",
+                    }}
                 >
                     <Slidebar isCollapsed={isSidebarCollapsed} />
                 </div>
 
                 {/* Main content area */}
-                <div
-                    className={`main-content-wrapper ${isSidebarCollapsed ? "col" : "col-md-9 col-lg-10"} p-0 d-flex flex-column`}
-                >
-                    <Header toggleSidebar={toggleSidebar} />
-
+                <div className="main-content-wrapper flex-grow-1 d-flex flex-column">
                     {/* Scrollable content */}
                     <main className="content flex-grow-1 p-4 bg-light overflow-auto">
                         <Outlet />
                     </main>
 
+                    {/* Footer */}
                     <Footer />
                 </div>
             </div>
         </div>
     );
 };
-
 
 export default HomeLayout;

@@ -1,27 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { PATHS } from "../../constant/pathnames";
-import {
-    getAllCustomers,
-    deleteCustomer
-} from "../../services/customerServices";
+import { getAllCustomers, deleteCustomer } from "../../services/customerServices";
 
 function Customer() {
     const [customers, setCustomers] = useState([]);
     const [filteredCustomers, setFilteredCustomers] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [classificationFilter, setClassificationFilter] = useState("");
+    const [phoneFilter, setPhoneFilter] = useState("");
+    const [addressFilter, setAddressFilter] = useState("");
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [customerToDelete, setCustomerToDelete] = useState(null);
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
-    const customersPerPage = 10; // Number of customers per page
+    const customersPerPage = 10;
 
     // Sort states
-    const [sortColumn, setSortColumn] = useState(""); // Currently sorted column
-    const [sortOrder, setSortOrder] = useState("asc"); // Ascending or descending
+    const [sortColumn, setSortColumn] = useState("");
+    const [sortOrder, setSortOrder] = useState("asc");
 
     // Fetch all customers
     useEffect(() => {
@@ -29,17 +28,17 @@ function Customer() {
             try {
                 const data = await getAllCustomers();
                 setCustomers(data);
-                setFilteredCustomers(data); // Initialize filteredCustomers
+                setFilteredCustomers(data);
             } catch (err) {
                 console.error("Error fetching customers:", err);
-                setError("Unable to fetch customers.");
+                setError("Không thể tải dữ liệu khách hàng.");
             }
         };
 
         fetchCustomers();
     }, []);
 
-    // Apply search, classification filter, and sorting
+    // Apply search, classification, phone, address filter, and sorting
     useEffect(() => {
         let tempCustomers = [...customers];
 
@@ -48,6 +47,20 @@ function Customer() {
             tempCustomers = tempCustomers.filter(
                 (customer) =>
                     customer.classification?.classificationName === classificationFilter
+            );
+        }
+
+        // Filter by phone
+        if (phoneFilter) {
+            tempCustomers = tempCustomers.filter((customer) =>
+                customer.phone?.includes(phoneFilter)
+            );
+        }
+
+        // Filter by address
+        if (addressFilter) {
+            tempCustomers = tempCustomers.filter((customer) =>
+                customer.address?.toLowerCase().includes(addressFilter.toLowerCase())
             );
         }
 
@@ -63,17 +76,41 @@ function Customer() {
         // Sort customers
         if (sortColumn) {
             tempCustomers.sort((a, b) => {
-                const aValue = a[sortColumn] || "";
-                const bValue = b[sortColumn] || "";
-                if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
-                if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+                let aValue = a[sortColumn] || "";
+                let bValue = b[sortColumn] || "";
+
+                // Handle nested properties if any
+                if (sortColumn.includes('.')) {
+                    const keys = sortColumn.split('.');
+                    aValue = a;
+                    bValue = b;
+                    keys.forEach(key => {
+                        aValue = aValue ? aValue[key] : '';
+                        bValue = bValue ? bValue[key] : '';
+                    });
+                }
+
+                // Ensure case-insensitive comparison for strings
+                if (typeof aValue === 'string') {
+                    aValue = aValue.toLowerCase();
+                }
+                if (typeof bValue === 'string') {
+                    bValue = bValue.toLowerCase();
+                }
+
+                if (aValue < bValue) {
+                    return sortOrder === "asc" ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortOrder === "asc" ? 1 : -1;
+                }
                 return 0;
             });
         }
 
         setFilteredCustomers(tempCustomers);
-        setCurrentPage(1); // Reset to the first page after filtering/sorting
-    }, [searchTerm, classificationFilter, customers, sortColumn, sortOrder]);
+        setCurrentPage(1);
+    }, [searchTerm, classificationFilter, phoneFilter, addressFilter, customers, sortColumn, sortOrder]);
 
     // Handle delete customer
     const confirmDelete = (customerId) => {
@@ -86,20 +123,22 @@ function Customer() {
             setCustomers(
                 customers.filter((customer) => customer.customerId !== customerToDelete)
             );
-            setSuccessMessage("Customer deleted successfully!");
+            setSuccessMessage("Khách hàng đã được xóa thành công!");
             setCustomerToDelete(null);
             setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
             console.error("Error deleting customer:", err);
-            setError("Unable to delete customer.");
+            setError("Không thể xóa khách hàng.");
         }
     };
 
     // Handle sort
     const handleSort = (column) => {
         if (sortColumn === column) {
+            // Toggle sort order if the same column is clicked
             setSortOrder(sortOrder === "asc" ? "desc" : "asc");
         } else {
+            // Set new sort column and default to ascending
             setSortColumn(column);
             setSortOrder("asc");
         }
@@ -123,10 +162,6 @@ function Customer() {
         if (currentPage > 1) setCurrentPage((prev) => prev - 1);
     };
 
-    // Get user role from localStorage (e.g., "Admin", "Staff")
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userRole = user?.role; // Assuming the user object contains the role
-
     if (error) {
         return <div className="alert alert-danger">{error}</div>;
     }
@@ -141,42 +176,44 @@ function Customer() {
 
     return (
         <div className="container">
-            {/* Success Message */}
             {successMessage && (
                 <div className="alert alert-success">{successMessage}</div>
             )}
 
-            {/* Add Customer Button */}
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h1
-                    className="text-center"
-                    style={{
-                        color: "#0056b3",
-                        fontWeight: "bold",
-                        textTransform: "uppercase"
-                    }}
-                >
-                    <i className="bi bi-person-lines-fill me-2"></i>Danh sách Khách Hàng
+                <h1 className="text-primary">
+                    <i className="bi bi-people-fill me-2"></i>Danh sách khách hàng
                 </h1>
-
                 <NavLink to={PATHS.ADD_CUSTOMER} className="btn btn-primary">
                     Thêm khách hàng
                 </NavLink>
             </div>
 
             {/* Search and Filter */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                {/* Search */}
+            <div className="d-flex justify-content-between align-items-center mb-4 gap-3">
                 <input
                     type="text"
-                    className="form-control w-50 me-3"
+                    className="form-control"
                     placeholder="Tìm kiếm theo tên hoặc email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                {/* Filter */}
+                <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Tìm theo số điện thoại..."
+                    value={phoneFilter}
+                    onChange={(e) => setPhoneFilter(e.target.value)}
+                />
+                <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Tìm theo địa chỉ..."
+                    value={addressFilter}
+                    onChange={(e) => setAddressFilter(e.target.value)}
+                />
                 <select
-                    className="form-select w-25"
+                    className="form-select"
                     value={classificationFilter}
                     onChange={(e) => setClassificationFilter(e.target.value)}
                 >
@@ -192,62 +229,60 @@ function Customer() {
                 <table className="table table-striped table-bordered">
                     <thead className="table-dark">
                         <tr>
-                            <th onClick={() => handleSort("customerId")}>
-                                ID{" "}
-                                {sortColumn === "customerId" &&
-                                    (sortOrder === "asc" ? "↑" : "↓")}
+                            <th onClick={() => handleSort("customerId")} style={{ cursor: "pointer" }}>
+                                ID {sortColumn === "customerId" && (sortOrder === "asc" ? "▲" : "▼")}
                             </th>
-                            <th onClick={() => handleSort("name")}>
-                                Tên {sortColumn === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+                            <th onClick={() => handleSort("name")} style={{ cursor: "pointer" }}>
+                                Tên {sortColumn === "name" && (sortOrder === "asc" ? "▲" : "▼")}
                             </th>
-                            <th onClick={() => handleSort("email")}>
-                                Email{" "}
-                                {sortColumn === "email" && (sortOrder === "asc" ? "↑" : "↓")}
+                            <th onClick={() => handleSort("email")} style={{ cursor: "pointer" }}>
+                                Email {sortColumn === "email" && (sortOrder === "asc" ? "▲" : "▼")}
                             </th>
-                            <th onClick={() => handleSort("phone")}>
-                                Điện thoại{" "}
-                                {sortColumn === "phone" && (sortOrder === "asc" ? "↑" : "↓")}
+                            <th onClick={() => handleSort("phone")} style={{ cursor: "pointer" }}>
+                                Điện thoại {sortColumn === "phone" && (sortOrder === "asc" ? "▲" : "▼")}
                             </th>
-                            <th onClick={() => handleSort("address")}>
-                                Địa chỉ{" "}
-                                {sortColumn === "address" && (sortOrder === "asc" ? "↑" : "↓")}
+                            <th onClick={() => handleSort("address")} style={{ cursor: "pointer" }}>
+                                Địa chỉ {sortColumn === "address" && (sortOrder === "asc" ? "▲" : "▼")}
                             </th>
-                            <th onClick={() => handleSort("classificationName")}>
-                                Phân loại{" "}
-                                {sortColumn === "classificationName" &&
-                                    (sortOrder === "asc" ? "↑" : "↓")}
+                            <th onClick={() => handleSort("classification.classificationName")} style={{ cursor: "pointer" }}>
+                                Phân loại {sortColumn === "classification.classificationName" && (sortOrder === "asc" ? "▲" : "▼")}
                             </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-
                     <tbody>
-                        {currentCustomers.map((customer) => (
-                            <tr key={customer.customerId}>
-                                <td>{customer.customerId}</td>
-                                <td>{customer.name}</td>
-                                <td>{customer.email}</td>
-                                <td>{customer.phone}</td>
-                                <td>{customer.address}</td>
-                                <td>{customer.classification?.classificationName}</td>
-                                <td>
-                                    <NavLink
-                                        to={`${PATHS.EDIT_CUSTOMER}/${customer.customerId}`}
-                                        className="btn btn-warning btn-sm me-2"
-                                    >
-                                        Sửa
-                                    </NavLink>
-                                    {userRole === "Admin" && (
+                        {currentCustomers.length > 0 ? (
+                            currentCustomers.map((customer) => (
+                                <tr key={customer.customerId}>
+                                    <td>{customer.customerId}</td>
+                                    <td>{customer.name}</td>
+                                    <td>{customer.email}</td>
+                                    <td>{customer.phone}</td>
+                                    <td>{customer.address}</td>
+                                    <td>{customer.classification?.classificationName}</td>
+                                    <td>
+                                        <NavLink
+                                            to={`${PATHS.EDIT_CUSTOMER}/${customer.customerId}`}
+                                            className="btn btn-warning btn-sm me-2"
+                                        >
+                                            Sửa
+                                        </NavLink>
                                         <button
                                             className="btn btn-danger btn-sm"
                                             onClick={() => confirmDelete(customer.customerId)}
                                         >
                                             Xóa
                                         </button>
-                                    )}
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="7" className="text-center">
+                                    Không tìm thấy khách hàng nào.
                                 </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -314,6 +349,7 @@ function Customer() {
             )}
         </div>
     );
+
 }
 
 export default Customer;

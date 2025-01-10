@@ -70,6 +70,15 @@ function PaymentList() {
     const handlePaymentStatusUpdate = async (paymentId, amount) => {
         if (!selectedProject) return;
 
+        // Hiển thị thông báo xác nhận
+        const confirmPayment = window.confirm(
+            `Bạn có chắc chắn muốn đánh dấu thanh toán với số tiền ${formatCurrency(amount)} không?`
+        );
+
+        if (!confirmPayment) {
+            return; // Người dùng nhấn "Hủy bỏ"
+        }
+
         try {
             // Update payment status to "Paid"
             await updatePayment(paymentId, { paymentStatus: "Paid" });
